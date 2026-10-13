@@ -19,9 +19,11 @@ java -version
 | Request | Behavior |
 | --- | --- |
 | `GET /api/weather` | Current weather for the default ZIP (85001, Phoenix) |
+| `GET /api/weather/city?cityName=Phoenix` | Current weather for the first matching city |
 | `GET /api/weather/zip?zipCode=90210` | Current weather for a five-digit US ZIP |
 
 ```sh
+curl 'http://localhost:8080/api/weather/city?cityName=Phoenix'
 curl http://localhost:8080/api/weather
 curl 'http://localhost:8080/api/weather/zip?zipCode=90210'
 ```
@@ -65,3 +67,5 @@ java -jar target/weather-service-0.0.1-SNAPSHOT.jar
 ```
 
 Tests cover default-location routing, ZIP input with leading zeros, missing input, and structured errors without calling external providers.
+
+City searches use [Open-Meteo geocoding](https://open-meteo.com/en/docs/geocoding-api) (location data from GeoNames). Names are trimmed and the first match is used; qualify ambiguous names, for example `Paris, France`. City responses use the same weather fields with `zipCode: null` and the administrative region in `state`. Missing or blank city names return 400, no matches return 404, and provider failures return 502.

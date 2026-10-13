@@ -22,6 +22,11 @@ public class WeatherController {
         return service.getWeather(defaultZip);
     }
 
+    @GetMapping("/city")
+    public WeatherService.WeatherResponse getWeatherByCity(@RequestParam String cityName) {
+        return service.getWeatherByCity(cityName);
+    }
+
     @GetMapping("/zip")
     public WeatherService.WeatherResponse getWeatherByZip(@RequestParam String zipCode) {
         return service.getWeather(zipCode);

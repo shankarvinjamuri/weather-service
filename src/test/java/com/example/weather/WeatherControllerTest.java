@@ -40,6 +40,20 @@ class WeatherControllerTest {
     }
 
     @Test
+    void cityEndpointUsesCityName() throws Exception {
+        when(service.getWeatherByCity("New York")).thenReturn(response(null));
+        mvc.perform(get("/api/weather/city").param("cityName", "New York"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.city").value("Example"));
+        verify(service).getWeatherByCity("New York");
+    }
+
+    @Test
+    void missingCityReturnsBadRequest() throws Exception {
+        mvc.perform(get("/api/weather/city")).andExpect(status().isBadRequest());
+        verifyNoInteractions(service);
+    }
+
+    @Test
     void missingZipReturnsBadRequest() throws Exception {
         mvc.perform(get("/api/weather/zip")).andExpect(status().isBadRequest());
         verifyNoInteractions(service);

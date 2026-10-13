@@ -16,14 +16,17 @@ import org.springframework.web.server.ResponseStatusException;
 public class WeatherService {
     private final RestClient zipClient;
     private final RestClient forecastClient;
+    private final RestClient geocodingClient;
 
     public WeatherService(RestClient.Builder builder,
             @Value("${weather.zip-base-url}") String zipBaseUrl,
-            @Value("${weather.forecast-base-url}") String forecastBaseUrl) {
+            @Value("${weather.forecast-base-url}") String forecastBaseUrl,
+            @Value("${weather.geocoding-base-url}") String geocodingBaseUrl) {
         var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(5));
         factory.setReadTimeout(Duration.ofSeconds(10));
         zipClient = builder.clone().requestFactory(factory).baseUrl(zipBaseUrl).build();
+        geocodingClient = builder.clone().requestFactory(factory).baseUrl(geocodingBaseUrl).build();
         forecastClient = builder.clone().requestFactory(factory).baseUrl(forecastBaseUrl).build();
     }
 
@@ -49,6 +52,36 @@ public class WeatherService {
         if (place == null || place.latitude() == null || place.longitude() == null) {
             throw unavailable();
         }
+        return getForecast(zipCode, place);
+    }
+
+    public WeatherResponse getWeatherByCity(String cityName) {
+        if (cityName == null || cityName.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cityName must not be blank");
+        }
+        CityLocations locations;
+        try {
+            locations = geocodingClient.get().uri(uri -> uri.path("/v1/search")
+                    .queryParam("name", "{name}").queryParam("count", 1)
+                    .queryParam("language", "en").build(cityName.strip()))
+                    .retrieve().body(CityLocations.class);
+        } catch (RestClientException ex) {
+            throw unavailable();
+        }
+        if (locations == null) {
+            throw unavailable();
+        }
+        if (locations.results() == null || locations.results().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "City not found");
+        }
+        CityLocation city = locations.results().get(0);
+        if (city == null || city.latitude() == null || city.longitude() == null) {
+            throw unavailable();
+        }
+        return getForecast(null, new Place(city.name(), city.admin1(), city.latitude(), city.longitude()));
+    }
+
+    private WeatherResponse getForecast(String zipCode, Place place) {
         try {
             Forecast forecast = forecastClient.get().uri(uri -> uri.path("/v1/forecast")
                     .queryParam("latitude", place.latitude())
@@ -70,6 +103,8 @@ public class WeatherService {
         return new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Weather provider unavailable; try again later");
     }
 
+    record CityLocations(List<CityLocation> results) {}
+    record CityLocation(String name, String admin1, Double latitude, Double longitude) {}
     record ZipLocation(List<Place> places) {}
     record Place(@JsonProperty("place name") String name, String state, Double latitude, Double longitude) {}
     record Forecast(String timezone, CurrentWeather current) {}
