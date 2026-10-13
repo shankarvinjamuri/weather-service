@@ -1,5 +1,6 @@
 package com.example.weather;
 
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +16,11 @@ public class WeatherController {
     public WeatherController(WeatherService service, @Value("${weather.default-zip}") String defaultZip) {
         this.service = service;
         this.defaultZip = defaultZip;
+    }
+
+    @GetMapping("/health")
+    public Map<String, String> healthcheck() {
+        return Map.of("status", "UP");
     }
 
     @GetMapping

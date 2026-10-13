@@ -18,6 +18,7 @@ java -version
 
 | Request | Behavior |
 | --- | --- |
+| `GET /api/weather/health` | Healthcheck returning HTTP 200 with `{"status":"UP"}`; does not call external providers |
 | `GET /api/weather` | Current weather for the default ZIP (85001, Phoenix) |
 | `GET /api/weather/city?cityName=Phoenix` | Current weather for the first matching city |
 | `GET /api/weather/zip?zipCode=90210` | Current weather for a five-digit US ZIP |

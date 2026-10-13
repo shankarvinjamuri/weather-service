@@ -23,6 +23,14 @@ class WeatherControllerTest {
     }
 
     @Test
+    void healthcheckReturnsUpWithoutCallingWeatherProvider() throws Exception {
+        mvc.perform(get("/api/weather/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+        verifyNoInteractions(service);
+    }
+
+    @Test
     void defaultEndpointUsesConfiguredZip() throws Exception {
         when(service.getWeather("85001")).thenReturn(response("85001"));
         mvc.perform(get("/api/weather")).andExpect(status().isOk())
